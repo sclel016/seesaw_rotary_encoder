@@ -9,6 +9,8 @@ from esphome.const import (
     UNIT_STEPS,
     ICON_ROTATE_RIGHT,
 )
+
+CONF_STEP = "step"
 from .. import (
     seesaw_rotary_encoder_ns,
     SeesawRotaryEncoder,
@@ -32,6 +34,7 @@ CONFIG_SCHEMA = (
             cv.GenerateID(CONF_SEESAW_ROTARY_ENCODER): cv.use_id(SeesawRotaryEncoder),
             cv.Optional(CONF_MIN_VALUE): cv.int_,
             cv.Optional(CONF_MAX_VALUE): cv.int_,
+            cv.Optional(CONF_STEP, default=1): cv.positive_int,
         }
     )
     .extend(cv.COMPONENT_SCHEMA)
@@ -50,3 +53,4 @@ async def to_code(config):
         cg.add(var.set_min_value(config[CONF_MIN_VALUE]))
     if CONF_MAX_VALUE in config:
         cg.add(var.set_max_value(config[CONF_MAX_VALUE]))
+    cg.add(var.set_step(config[CONF_STEP]))
