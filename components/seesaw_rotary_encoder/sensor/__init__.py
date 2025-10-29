@@ -34,7 +34,7 @@ CONFIG_SCHEMA = (
             cv.GenerateID(CONF_SEESAW_ROTARY_ENCODER): cv.use_id(SeesawRotaryEncoder),
             cv.Optional(CONF_MIN_VALUE): cv.int_,
             cv.Optional(CONF_MAX_VALUE): cv.int_,
-            cv.Optional(CONF_STEP, default=1): cv.positive_int,
+            cv.Optional(CONF_STEP, default=1): cv.positive_float,
         }
     )
     .extend(cv.COMPONENT_SCHEMA)

@@ -16,7 +16,7 @@ void SeesawRotaryEncoderSensor::setup() {
   this->last_raw_position_ = this->parent_->get_encoder_position();
   
   // Calculate scaled position
-  this->last_position_ = this->last_raw_position_ * this->step_;
+  this->last_position_ = static_cast<int32_t>(this->last_raw_position_ * this->step_);
   
   // Clamp to min/max if set
   if (this->last_position_ < this->min_value_) {
@@ -36,7 +36,7 @@ void SeesawRotaryEncoderSensor::loop() {
   if (new_raw_position != this->last_raw_position_) {
     // Calculate delta and apply step scaling
     int32_t delta = new_raw_position - this->last_raw_position_;
-    int32_t new_position = this->last_position_ + (delta * this->step_);
+    int32_t new_position = static_cast<int32_t>(this->last_position_ + (delta * this->step_));
     
     // Clamp to min/max if set
     if (new_position < this->min_value_) {
@@ -66,7 +66,7 @@ void SeesawRotaryEncoderSensor::dump_config() {
   if (this->max_value_ != INT32_MAX) {
     ESP_LOGCONFIG(TAG, "  Max Value: %d", this->max_value_);
   }
-  ESP_LOGCONFIG(TAG, "  Step: %d", this->step_);
+  ESP_LOGCONFIG(TAG, "  Step: %.2f", this->step_);
 }
 
 }  // namespace seesaw_rotary_encoder
