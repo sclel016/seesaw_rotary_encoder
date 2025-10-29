@@ -1,0 +1,10 @@
+{
+  "name": "Seesaw Rotary Encoder",
+  "description": "ESPHome component for Adafruit I2C QT Rotary Encoder with NeoPixel",
+  "version": "1.0.0",
+  "authors": ["@ssieb"],
+  "dependencies": ["i2c"],
+  "codeowners": ["@ssieb"],
+  "documentation": "README.md",
+  "requirements": []
+}
