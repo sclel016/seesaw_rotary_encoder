@@ -12,47 +12,48 @@ void SeesawRotaryEncoderSensor::setup() {
   // Enable encoder interrupt
   this->parent_->enable_encoder_interrupt();
   
-  // Get initial raw position from hardware
-  this->last_raw_position_ = this->parent_->get_encoder_position();
+  // Clamp initial position to valid range
+  this->last_position_ = std::max(std::min(this->last_position_, this->max_value_), this->min_value_);
   
-  // Calculate scaled position
-  this->last_position_ = static_cast<int32_t>(this->last_raw_position_ * this->step_);
-  
-  // Clamp to min/max if set
-  if (this->last_position_ < this->min_value_) {
-    this->last_position_ = this->min_value_;
-  }
-  if (this->last_position_ > this->max_value_) {
-    this->last_position_ = this->max_value_;
-  }
+  // Reset hardware encoder position to match our software position
+  // This ensures delta tracking starts from the correct baseline
+  this->parent_->set_encoder_position(this->last_position_);
   
   this->publish_state(this->last_position_);
+  this->last_update_ms_ = millis();
 }
 
 void SeesawRotaryEncoderSensor::loop() {
-  int32_t new_raw_position = this->parent_->get_encoder_position();
+  // Throttle polling to reduce I2C bus traffic and improve stability
+  // Poll every 1ms (1000Hz) which is responsive enough for encoder input
+  uint32_t now = millis();
+  // Use signed arithmetic to handle millis() rollover correctly
+  if ((int32_t)(now - (int32_t)this->last_update_ms_) < 1) {
+    return;
+  }
+  this->last_update_ms_ = now;
   
-  // Only process if raw position changed
-  if (new_raw_position != this->last_raw_position_) {
-    // Calculate delta and apply step scaling
-    int32_t delta = new_raw_position - this->last_raw_position_;
-    int32_t new_position = static_cast<int32_t>(this->last_position_ + (delta * this->step_));
-    
-    // Clamp to min/max if set
-    if (new_position < this->min_value_) {
-      new_position = this->min_value_;
-    }
-    if (new_position > this->max_value_) {
-      new_position = this->max_value_;
-    }
-    
-    // Update tracking variables
-    this->last_raw_position_ = new_raw_position;
-    
-    // Only publish if scaled position changed
+  // Read delta since last read (this is the proper way per Adafruit documentation)
+  // Reading delta does NOT interfere with the hardware tracking like reading position does
+  int32_t delta = this->parent_->get_encoder_delta();
+  
+  // Only process if there was actual movement
+  if (delta != 0) {
+
+    // Apply step scaling to the delta
+    int32_t scaled_delta = static_cast<int32_t>(delta * this->step_);
+    int32_t new_position = this->last_position_ + scaled_delta;
+
+    ESP_LOGD(TAG, "Delta: %d, scaled: %d, old pos: %d, new pos (unclamped): %d", 
+             delta, scaled_delta, this->last_position_, new_position);
+
+    new_position = std::max(std::min(new_position, this->max_value_), this->min_value_);
+
+    // Only publish if position actually changed after clamping
     if (new_position != this->last_position_) {
       this->last_position_ = new_position;
       this->publish_state(new_position);
+      ESP_LOGI(TAG, "Encoder position: %d", new_position);
     }
   }
 }

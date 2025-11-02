@@ -89,8 +89,10 @@ int32_t SeesawRotaryEncoder::get_encoder_position() {
   if (this->readbuf(SEESAW_ENCODER, SEESAW_ENCODER_POSITION, buf, 4) != i2c::ERROR_OK) {
     return 0;
   }
-  int32_t position = ((int32_t) buf[0] << 24) | ((int32_t) buf[1] << 16) | ((int32_t) buf[2] << 8) | (int32_t) buf[3];
-  return -position;  // Invert to make clockwise positive
+  // Cast to uint32_t first to avoid sign extension, then reinterpret as int32_t
+  int32_t position = ((uint32_t) buf[0] << 24) | ((uint32_t) buf[1] << 16) | ((uint32_t) buf[2] << 8) | (uint32_t) buf[3];
+  // return -position;  // Invert to make clockwise positive
+  return position; 
 }
 
 int32_t SeesawRotaryEncoder::get_encoder_delta() {
@@ -98,12 +100,15 @@ int32_t SeesawRotaryEncoder::get_encoder_delta() {
   if (this->readbuf(SEESAW_ENCODER, SEESAW_ENCODER_DELTA, buf, 4) != i2c::ERROR_OK) {
     return 0;
   }
-  int32_t delta = ((int32_t) buf[0] << 24) | ((int32_t) buf[1] << 16) | ((int32_t) buf[2] << 8) | (int32_t) buf[3];
-  return -delta;  // Invert to make clockwise positive
+  // Cast to uint32_t first to avoid sign extension, then reinterpret as int32_t
+  int32_t delta = ((uint32_t) buf[0] << 24) | ((uint32_t) buf[1] << 16) | ((uint32_t) buf[2] << 8) | (uint32_t) buf[3];
+  // return -delta;  // Invert to make clockwise positive
+  return delta; 
 }
 
 void SeesawRotaryEncoder::set_encoder_position(int32_t pos) {
-  this->write32(SEESAW_ENCODER, SEESAW_ENCODER_POSITION, -pos);  // Invert back
+  // this->write32(SEESAW_ENCODER, SEESAW_ENCODER_POSITION, -pos);  // Invert back
+  this->write32(SEESAW_ENCODER, SEESAW_ENCODER_POSITION, pos);
 }
 
 // GPIO functions
@@ -204,7 +209,9 @@ i2c::ErrorCode SeesawRotaryEncoder::readbuf(SeesawModule mod, uint8_t reg, uint8
   if (err != i2c::ERROR_OK) {
     return err;
   }
-  delay(1);  // Small delay for seesaw to process
+  // Small delay for seesaw to process the command (Adafruit uses 250us by default)
+  // Using delayMicroseconds for more accurate timing
+  delayMicroseconds(500);  // 500us should be safe for all operations
   return this->read(buf, len);
 }
 
